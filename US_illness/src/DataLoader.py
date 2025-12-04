@@ -79,65 +79,6 @@ class FluDataset:
 
         return X, y
 
-    # def _preprocess_test_data(self, df):
-    #     """预处理测试数据"""
-    #     all_columns = list(df.columns)
-    #
-    #     # 1. 分离州编码 (列1-34)
-    #     state_columns = all_columns[1:35]
-    #
-    #     # 2. 测试集只有前两天的完整数据 + 第三天的部分数据
-    #     n_features_per_day = 17
-    #
-    #     # 检查测试集是否有完整的Day3数据
-    #     total_cols = len(all_columns)
-    #     expected_cols = 1 + 34 + 3 * n_features_per_day  # 86
-    #
-    #     if total_cols < expected_cols:
-    #         # 测试集缺少Day3的tested_positive
-    #         print(f"测试集只有{total_cols}列，缺少Day3的tested_positive")
-    #
-    #         # 计算实际的天数特征
-    #         available_cols = total_cols - 35  # 减去id和州编码
-    #         # Day1 + Day2 = 34列，剩余的是Day3的特征
-    #         day3_cols = available_cols - 34
-    #         print(f"Day1: 17列, Day2: 17列, Day3: {day3_cols}列")
-    #
-    #     # 3. 列索引（测试集可能没有完整的Day3）
-    #     day1_start = 35
-    #     day1_end = day1_start + n_features_per_day
-    #
-    #     day2_start = day1_end
-    #     day2_end = day2_start + n_features_per_day
-    #
-    #     # 4. 构建测试特征 X_test（与训练集格式相同）
-    #     X_parts = []
-    #
-    #     # 4.1 州编码
-    #     X_parts.append(df[state_columns].values)
-    #
-    #     # 4.2 Day1特征（前16个，排除tested_positive）
-    #     day1_features = []
-    #     for i in range(day1_start, day1_end - 1):  # 排除最后一个(tested_positive)
-    #         col_name = all_columns[i]
-    #         day1_features.append(df[col_name].values.reshape(-1, 1))
-    #     day1_matrix = np.hstack(day1_features)
-    #     X_parts.append(day1_matrix)
-    #
-    #     # 4.3 Day2特征（前16个，排除tested_positive）
-    #     day2_features = []
-    #     for i in range(day2_start, day2_end - 1):  # 排除最后一个(tested_positive)
-    #         col_name = all_columns[i]
-    #         day2_features.append(df[col_name].values.reshape(-1, 1))
-    #     day2_matrix = np.hstack(day2_features)
-    #     X_parts.append(day2_matrix)
-    #
-    #     X_test = np.hstack(X_parts).astype(np.float32)
-    #
-    #     print(f"测试集特征形状: {X_test.shape}")
-    #     print(f"注意: 测试集没有Day3的tested_positive，需要模型预测")
-    #
-    #     return X_test
 
     def create_datasets(self, val_size=0.2):
         # 1. 划分训练集和验证集
@@ -169,96 +110,10 @@ class FluDataset:
         return (X_train_tensor, y_train_tensor,
                 X_val_tensor, y_val_tensor, X_test_tensor)
 
-    def test(self):
-        print("=== 检查测试集数据提取 ===")
-        print(f"测试集形状: {self.df_test.shape}")
-        print(f"测试集列数: {len(self.df_test.columns)}")
-        print(f"最后几列名:")
-        for i, col in enumerate(self.df_test.columns[-5:], 1):
-            print(f"  列{i}: '{col}'")
-
-        # 检查特征矩阵
-        print(f"\nX_test形状: {self.X_test.shape}")
-        print("X_test前3行前5列:")
-        print(self.X_test[:3, :5])
-        print("X_test前3行最后5列:")
-        print(self.X_test[:3, -5:])
-        print("=== 训练集目标变量分析 ===")
-        y_train_vals = self.y  # 你的训练集目标
-
-        print(f"训练集y统计:")
-        print(f"  最小值: {y_train_vals.min():.4f}")
-        print(f"  最大值: {y_train_vals.max():.4f}")
-        print(f"  均值: {y_train_vals.mean():.4f}")
-        print(f"  中位数: {np.median(y_train_vals):.4f}")
-        print(f"  标准差: {y_train_vals.std():.4f}")
-
-        # 查看分布
-        plt.figure(figsize=(10, 4))
-        plt.hist(y_train_vals, bins=50, edgecolor='black', alpha=0.7)
-        plt.axvline(y_train_vals.mean(), color='red', linestyle='--', label=f'均值={y_train_vals.mean():.2f}')
-        plt.axvline(np.median(y_train_vals), color='green', linestyle='--',
-                    label=f'中位数={np.median(y_train_vals):.2f}')
-        plt.xlabel('tested_positive')
-        plt.ylabel('频次')
-        plt.title('训练集目标变量分布')
-        plt.legend()
-        plt.show()
-        wi_col = 'WI'  # 根据你的列名调整
-        if wi_col in self.df_train.columns:
-            wi_mask = self.df_train[wi_col] == 1
-            wi_samples = wi_mask.sum()
-            print(f"\n训练集中WI州样本数: {wi_samples}/{len(self.df_train)}")
-
-            if wi_samples > 0:
-                wi_y = self.y[wi_mask]
-                print(f"WI州的目标变量统计:")
-                print(f"  范围: [{wi_y.min():.2f}, {wi_y.max():.2f}]")
-                print(f"  均值: {wi_y.mean():.2f}")
-
-    def check_data_leakage_in_detail(dataset):
-        """详细检查数据泄露"""
-
-        print("🔍 详细检查数据泄露")
-        print("=" * 60)
-
-        # 1. 查看列结构
-        print("1. 训练集列结构:")
-        train_cols = list(dataset.df_train.columns)
-        print(f"   总列数: {len(train_cols)}")
-        print(f"   前5列: {train_cols[:5]}")
-        print(f"   最后5列: {train_cols[-5:]}")
-
-        # 2. 检查目标列位置
-        day3_end = 89  # 根据您的代码
-        target_idx = day3_end - 1
-        print(f"\n2. 目标列位置检查:")
-        print(f"   目标列索引: {target_idx}")
-        print(f"   目标列名: '{train_cols[target_idx]}'")
-
-        # 3. 检查特征包含的列范围
-        print(f"\n3. 特征包含的列范围:")
-        print(f"   特征循环: range(1, {len(train_cols)} - 1)")
-        print(f"   实际范围: 列索引 1 到 {len(train_cols) - 2}")
-        print(f"   这意味着特征包含了列: {train_cols[1]} 到 '{train_cols[-2]}'")
-
-        # 4. 关键检查：目标列是否在特征中
-        if target_idx < len(train_cols) - 1:
-            print(f"\n❌❌❌ 严重数据泄露！❌❌❌")
-            print(f"   目标列索引: {target_idx}")
-            print(f"   特征包含到列索引: {len(train_cols) - 2}")
-            print(f"   目标列 '{train_cols[target_idx]}' 被包含在特征中！")
-            print(f"   这等于在考试时直接把答案给了模型！")
-            return True
-        else:
-            print(f"\n✅ 目标列不在特征中")
-            return False
-
 if __name__ == "__main__":
     dataset=FluDataset(r"D:\codeC\US_illness\data\train.xlsx",r"D:\codeC\US_illness\data\test.xlsx")
     dataset.load_data()
     dataset.preprocess_data()
     dataset.create_datasets()
-    dataset.check_data_leakage_in_detail()
-#    dataset.test()
+
 
