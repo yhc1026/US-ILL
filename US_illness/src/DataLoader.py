@@ -115,5 +115,3 @@ if __name__ == "__main__":
     dataset.load_data()
     dataset.preprocess_data()
     dataset.create_datasets()
-
-

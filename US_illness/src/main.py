@@ -11,7 +11,7 @@ import numpy as np
 
 epochs = 200
 batch_size = 32
-learning_rate = 0.0006
+learning_rate = 0.0005
 patience = 25
 
 def predict():
@@ -73,12 +73,14 @@ def predict():
     results_df['n_ensemble_models'] = n_ensemble
     results_df['ensemble_method'] = 'mean_average'
     results_df['generation_time'] = timestamp
-    results_df.to_csv(output_path, index=False)
     test=[18.4907873,16.3292532,16.5229315,15.578501,14.1719204,13.9259455,14.36337,15.5106489,14.5280436,13.6732144]
     abs_errors = torch.abs(torch.tensor(test) - torch.tensor(ensemble_predictions))
     mae = torch.mean(abs_errors)
     mae_item=mae.item()
+    results_df['mae'] = mae_item
+    results_df.to_csv(output_path, index=False)
     print(f"预测范围: {ensemble_predictions.min():.2f} ~ {ensemble_predictions.max():.2f}, MAE: {mae_item:.2f}")
+
 
 
 def validate():
@@ -105,5 +107,5 @@ def validate():
 
 
 if __name__ == "__main__":
-    predict()
-    #validate()
+    #predict()
+    validate()
